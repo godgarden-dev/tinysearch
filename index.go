@@ -84,8 +84,8 @@ func (idx Index) String() string {
 	keys := make([]string, 0, len(idx.Dictionary))
 	for k := range idx.Dictionary {
 		l := utf8.RuneCountInString(k)
-		if padding < 1 {
-			padding = 1
+		if padding < l {
+			padding = l
 		}
 		keys = append(keys, k)
 	}
