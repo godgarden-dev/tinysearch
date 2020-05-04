@@ -2,6 +2,7 @@ package tinysearch
 
 import (
 	"container/list"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -112,4 +113,27 @@ func (pl PostingsList) String() string {
 func (p Posting) String() string {
 	return fmt.Sprintf("(%v,%v,%v)",
 		p.DocID, p.TermFrequency, p.Positions)
+}
+
+func (pl PostingsList) MarshalJSON() ([]byte, error) {
+
+	postings := make([]*Posting, 0, pl.Len())
+
+	for e := pl.Front(); e != nil; e = e.Next() {
+		postings = append(postings, e.Value.(*Posting))
+	}
+	return json.Marshal(postings)
+}
+
+func (pl *PostingsList) UnmarshalJSON(b []byte) error {
+
+	var postings []*Posting
+	if err := json.Unmarshal(b, &postings); err != nil {
+		return err
+	}
+	pl.List = list.New()
+	for _, posting := range postings {
+		pl.add(posting)
+	}
+	return nil
 }
