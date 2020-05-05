@@ -137,3 +137,40 @@ func (pl *PostingsList) UnmarshalJSON(b []byte) error {
 	}
 	return nil
 }
+
+// ポスティングリストをたどるためのカーソル
+type Cursor struct {
+	postingsList *PostingsList // cursor がたどっているポスティングリストへの参照
+	current      *list.Element // 現在の読み込み位置
+}
+
+func (pl PostingsList) OpenCursor() *Cursor {
+	return &Cursor{
+		postingsList: &pl,
+		current:      pl.Front(),
+	}
+}
+
+func (c *Cursor) Next() {
+	c.current = c.current.Next()
+}
+
+// id以上のドキュメントID になるまでポインタを進める
+func (c *Cursor) Empty() bool {
+	if c.current == nil {
+		return true
+	}
+	return false
+}
+
+func (c *Cursor) Posting() *Posting {
+	return c.current.Value.(*Posting)
+}
+
+func (c *Cursor) DocId() DocumentID {
+	return c.current.Value.(*Posting).DocID
+}
+
+func (c *Cursor) String() string {
+	return fmt.Sprint(c.Posting())
+}
