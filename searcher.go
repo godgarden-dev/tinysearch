@@ -2,6 +2,7 @@ package tinysearch
 
 import (
 	"fmt"
+	"math"
 	"sort"
 )
 
@@ -126,4 +127,29 @@ func (s *Searcher) openCursors(query []string) int {
 	}
 	s.cursors = cursors
 	return len(cursors)
+}
+
+// tf-idf スコアを計算する
+func (s *Searcher) calcScore() float64 {
+	var score float64
+	for i := 0; i < len(s.cursors); i++ {
+		termFreq := s.cursors[i].Posting().TermFrequency
+		docCount := s.cursors[i].postingsList.Len()
+		totalDocCount := s.indexReader.totalDocCount()
+		score += calcTF(termFreq) * calIDF(totalDocCount, docCount)
+	}
+	return score
+}
+
+// TF の計算
+func calcTF(termCount int) float64 {
+	if termCount <= 0 {
+		return 0
+	}
+	return math.Log2(float64(termCount)) + 1
+}
+
+// IDF の計算
+func calIDF(N, df int) float64 {
+	return math.Log2(float64(N) / float64(df))
 }
