@@ -1,3 +1,3 @@
-# go-tinysearch
+# tinysearch
 
-Easy Search Engine
+A simple search engine developed in Golang.
