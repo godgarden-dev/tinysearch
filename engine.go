@@ -50,3 +50,33 @@ func (e *Engine) Flush() error {
 	writer := NewIndexWriter(e.indexDir)
 	return writer.Flush(e.indexer.index)
 }
+
+// 検索を実行する
+func (e *Engine) Search(query string, k int) ([]*SearchResult, error) {
+
+	// クエリをトークンに分割
+	terms := e.tokenizer.TextToWordSequence(query)
+
+	// 検索を実行
+	docs := NewSearcher(e.indexDir).SearchTopK(terms, k)
+
+	// タイトルを取得
+	results := make([]*SearchResult, 0, k)
+	for _, result := range docs.scoreDocs {
+		title, err := e.documentStore.fetchTitle(result.docID)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &SearchResult{
+			result.docID, result.score, title,
+		})
+	}
+	return results, nil
+}
+
+// 検索結果を格納する構造体
+type SearchResult struct {
+	DocID DocumentID
+	Score float64
+	Title string
+}

@@ -3,6 +3,7 @@ package tinysearch
 import (
 	"bufio"
 	"bytes"
+	"strings"
 	"unicode"
 )
 
@@ -32,4 +33,23 @@ func (t *Tokenizer) SplitFunc(data []byte, atEOF bool) (advance int, token []byt
 		}
 	}
 	return
+}
+
+// 文字列を分解する処理
+func (t *Tokenizer) TextToWordSequence(text string) []string {
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	scanner.Split(t.SplitFunc)
+	var result []string
+	for scanner.Scan() {
+		result = append(result, scanner.Text())
+	}
+	return result
+}
+
+func (ds *DocumentStore) fetchTitle(docID DocumentID) (string, error) {
+	query := "SELECT document_title FROM documents WHERE document_id = ?"
+	row := ds.db.QueryRow(query, docID)
+	var title string
+	err := row.Scan(&title)
+	return title, err
 }
