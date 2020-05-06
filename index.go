@@ -10,19 +10,42 @@ import (
 	"unicode/utf8"
 )
 
-// 転置インデックス
+// 転地インデックス
+// 注意: mapを使用しているのでマルチスレッドには対応していない
 type Index struct {
 	Dictionary     map[string]PostingsList // 辞書
 	TotalDocsCount int                     // ドキュメントの総数
 }
 
-// NewIndex create a new index
+// NewIndex create a new index.
 func NewIndex() *Index {
 	dict := make(map[string]PostingsList)
 	return &Index{
 		Dictionary:     dict,
 		TotalDocsCount: 0,
 	}
+}
+
+func (idx Index) String() string {
+	var padding int
+	keys := make([]string, 0, len(idx.Dictionary))
+	for k := range idx.Dictionary {
+		l := utf8.RuneCountInString(k)
+		if padding < l {
+			padding = l
+		}
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	strs := make([]string, len(keys))
+	format := "  [%-" + strconv.Itoa(padding) + "s] -> %s"
+	for i, k := range keys {
+		if postingList, ok := idx.Dictionary[k]; ok {
+			strs[i] = fmt.Sprintf(format, k, postingList.String())
+		}
+	}
+	return fmt.Sprintf("total documents : %v\ndictionary:\n%v\n",
+		idx.TotalDocsCount, strings.Join(strs, "\n"))
 }
 
 // ドキュメントID
@@ -38,6 +61,11 @@ type Posting struct {
 // ポスティングを作成する
 func NewPosting(docID DocumentID, positions ...int) *Posting {
 	return &Posting{docID, positions, len(positions)}
+}
+
+func (p Posting) String() string {
+	return fmt.Sprintf("(%v,%v,%v)",
+		p.DocID, p.TermFrequency, p.Positions)
 }
 
 // ポスティングリスト
@@ -66,55 +94,6 @@ func (pl PostingsList) last() *Posting {
 	return e.Value.(*Posting)
 }
 
-// ポスティングをリストに追加
-// ポスティングリストの最後を取得してドキュメントIDが
-// 一致していなければ、ポスティングを追加
-// 一致していれば、position を追加
-func (pl PostingsList) Add(new *Posting) {
-	last := pl.last()
-	if last == nil || last.DocID != new.DocID {
-		pl.add(new)
-		return
-	}
-	last.Positions = append(last.Positions, new.Positions...)
-	last.TermFrequency++
-}
-
-func (idx Index) String() string {
-	var padding int
-	keys := make([]string, 0, len(idx.Dictionary))
-	for k := range idx.Dictionary {
-		l := utf8.RuneCountInString(k)
-		if padding < l {
-			padding = l
-		}
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	strs := make([]string, len(keys))
-	format := " [%-" + strconv.Itoa(padding) + "s] -> %s"
-	for i, k := range keys {
-		if postingList, ok := idx.Dictionary[k]; ok {
-			strs[i] = fmt.Sprintf(format, k, postingList.String())
-		}
-	}
-	return fmt.Sprintf("total documents : %v\ndictionary:\n%v\n",
-		idx.TotalDocsCount, strings.Join(strs, "\n"))
-}
-
-func (pl PostingsList) String() string {
-	str := make([]string, 0, pl.Len())
-	for e := pl.Front(); e != nil; e = e.Next() {
-		str = append(str, e.Value.(*Posting).String())
-	}
-	return strings.Join(str, "=>")
-}
-
-func (p Posting) String() string {
-	return fmt.Sprintf("(%v,%v,%v)",
-		p.DocID, p.TermFrequency, p.Positions)
-}
-
 func (pl PostingsList) MarshalJSON() ([]byte, error) {
 
 	postings := make([]*Posting, 0, pl.Len())
@@ -135,12 +114,35 @@ func (pl *PostingsList) UnmarshalJSON(b []byte) error {
 	for _, posting := range postings {
 		pl.add(posting)
 	}
+
 	return nil
+}
+
+// ポスティングをリストに追加
+// ポスティングリストの最後を取得してドキュメントIDが
+// 一致していなければ、ポスティングを追加
+// 一致していれば、positionを追加
+func (pl PostingsList) Add(new *Posting) {
+	last := pl.last()
+	if last == nil || last.DocID != new.DocID {
+		pl.add(new)
+		return
+	}
+	last.Positions = append(last.Positions, new.Positions...)
+	last.TermFrequency++
+}
+
+func (pl PostingsList) String() string {
+	str := make([]string, 0, pl.Len())
+	for e := pl.Front(); e != nil; e = e.Next() {
+		str = append(str, e.Value.(*Posting).String())
+	}
+	return strings.Join(str, "=>")
 }
 
 // ポスティングリストをたどるためのカーソル
 type Cursor struct {
-	postingsList *PostingsList // cursor がたどっているポスティングリストへの参照
+	postingsList *PostingsList // cursorがたどっているポスティングリストへの参照
 	current      *list.Element // 現在の読み込み位置
 }
 
@@ -155,7 +157,12 @@ func (c *Cursor) Next() {
 	c.current = c.current.Next()
 }
 
-// id以上のドキュメントID になるまでポインタを進める
+func (c *Cursor) NextDoc(id DocumentID) {
+	for !c.Empty() && c.DocId() < id {
+		c.Next()
+	}
+}
+
 func (c *Cursor) Empty() bool {
 	if c.current == nil {
 		return true
