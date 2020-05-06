@@ -1,9 +1,7 @@
 package tinysearch
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
 	_ "github.com/go-sql-driver/mysql"
 	"io/ioutil"
 	"log"
@@ -34,7 +32,7 @@ func setup() *sql.DB {
 }
 
 func TestMain(m *testing.M) {
-	testDB := setup()
+	testDB = setup()
 	defer testDB.Close()
 	exitCode := m.Run()
 	os.Exit(exitCode)
@@ -43,25 +41,26 @@ func TestMain(m *testing.M) {
 // インデックス構築処理のテスト
 func TestCreateIndex(t *testing.T) {
 
-	engine := NewSearchEngine(testDB) // 検索エンジンを初期化する
+	engine := NewSearchEngine(testDB) // ❶ 検索エンジンを初期化する
 
 	type testDoc struct {
 		title string
 		body  string
 	}
 	docs := []testDoc{
-		{"test1", "Do you quarrel, sir?"}, {"test2", "No better."},
+		{"test1", "Do you quarrel, sir?"},
+		{"test2", "No better."},
 		{"test3", "Quarrel sir! no, sir!"},
 	}
 	for _, doc := range docs {
-		// インデックスにドキュメントを追加する
+		// ❷ インデックスにドキュメントを追加する
 		r := strings.NewReader(doc.body)
 		if err := engine.AddDocument(doc.title, r); err != nil {
 			t.Fatalf("failed to add document %s: %v", doc.title, err)
 		}
 	}
 
-	// インデックスをファイルに書き出して永続化
+	// ❸ インデックスをファイルに書き出して永続化
 	if err := engine.Flush(); err != nil {
 		t.Fatalf("failed to save index to file :%v", err)
 	}
@@ -87,14 +86,12 @@ func TestCreateIndex(t *testing.T) {
 				t.Fatalf("failed to load index: %v", err)
 			}
 			defer file.Close()
-			b, err := ioutil.ReadAll(file)
+			bytes, err := ioutil.ReadAll(file)
 			if err != nil {
 				t.Fatalf("failed to load index: %v", err)
 			}
-			got := string(b)
-			var buf bytes.Buffer
-			_ = json.Compact(&buf, []byte(testCase.postingsStr))
-			want := buf.String()
+			got := string(bytes)
+			want := testCase.postingsStr
 			if got != want {
 				t.Errorf("got : %v\nwant: %v\n", got, want)
 			}
@@ -109,7 +106,7 @@ func TestSearch(t *testing.T) {
 	query := "Quarrel, sir."
 	actual, err := engine.Search(query, 5)
 	if err != nil {
-		t.Fatalf("failed searchToK: %v", err)
+		t.Fatalf("failed SearchTopK: %v", err)
 	}
 
 	expected := []*SearchResult{
@@ -120,4 +117,5 @@ func TestSearch(t *testing.T) {
 	for !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("\ngot:\n%v\nwant:\n%v\n", actual, expected)
 	}
+
 }

@@ -15,15 +15,14 @@ func NewTokenizer() *Tokenizer {
 
 func replace(r rune) rune {
 	// 英数字以外だったら捨てる
-	if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') &&
-		!unicode.IsNumber(r) {
+	if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && !unicode.IsNumber(r) {
 		return -1
 	}
 	// 大文字を小文字に変換する
 	return unicode.ToLower(r)
 }
 
-// io.Reader から読み込んだデータをトークンに分割する関数
+// io.Readerから読んだデータをトークンに分割する関数
 func (t *Tokenizer) SplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	advance, token, err = bufio.ScanWords(data, atEOF)
 	if err == nil && token != nil {
@@ -44,12 +43,4 @@ func (t *Tokenizer) TextToWordSequence(text string) []string {
 		result = append(result, scanner.Text())
 	}
 	return result
-}
-
-func (ds *DocumentStore) fetchTitle(docID DocumentID) (string, error) {
-	query := "SELECT document_title FROM documents WHERE document_id = ?"
-	row := ds.db.QueryRow(query, docID)
-	var title string
-	err := row.Scan(&title)
-	return title, err
 }

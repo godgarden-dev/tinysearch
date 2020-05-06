@@ -6,7 +6,7 @@ import (
 )
 
 func TestSearchTopK(t *testing.T) {
-	s := NewSearcher("testdata/index")                    // earcher の初期化
+	s := NewSearcher("testdata/index")                    // searcher の初期化
 	actual := s.SearchTopK([]string{"quarrel", "sir"}, 1) // 検索の実行
 
 	expected := &TopDocs{2,

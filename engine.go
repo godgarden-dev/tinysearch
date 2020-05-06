@@ -2,11 +2,13 @@ package tinysearch
 
 import (
 	"database/sql"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
+// 検索エンジン
 type Engine struct {
 	tokenizer     *Tokenizer     // トークンを分割する
 	indexer       *Indexer       // インデックスを作成する
@@ -26,6 +28,7 @@ func NewSearchEngine(db *sql.DB) *Engine {
 		current, _ := os.Getwd()
 		path = filepath.Join(current, "_index_data")
 	}
+
 	return &Engine{
 		tokenizer:     tokenizer,
 		indexer:       indexer,
@@ -36,12 +39,11 @@ func NewSearchEngine(db *sql.DB) *Engine {
 
 // インデックスにドキュメントを追加する
 func (e *Engine) AddDocument(title string, reader io.Reader) error {
-	id, err := e.documentStore.save(title) // タイトルを保存しドキュメントIDを発行する
-
+	id, err := e.documentStore.save(title) // ❶ タイトルを保存しドキュメントIDを発行する
 	if err != nil {
 		return err
 	}
-	e.indexer.update(id, reader) // インデックスを更新する
+	e.indexer.update(id, reader) // ❷ インデックスを更新する
 	return nil
 }
 
@@ -79,4 +81,10 @@ type SearchResult struct {
 	DocID DocumentID
 	Score float64
 	Title string
+}
+
+// String print SearchTopK result info
+func (r *SearchResult) String() string {
+	return fmt.Sprintf("{DocID: %v, Score: %v, Title: %v}",
+		r.DocID, r.Score, r.Title)
 }

@@ -11,7 +11,7 @@ import (
 type IndexReader struct {
 	indexDir      string                   // インデックスファイルが保存されているディレクトリのパス
 	postingsCache map[string]*PostingsList // 読み込んだポスティングリストをキャッシュするフィールド
-	docCountCache int                      // インデックスされたドキュメント
+	docCountCache int                      // インデックスされたドキュメント数をキャッシュするフィールド
 }
 
 func NewIndexReader(path string) *IndexReader {
@@ -19,6 +19,7 @@ func NewIndexReader(path string) *IndexReader {
 	return &IndexReader{path, cache, -1}
 }
 
+// ポスティングリストの取得
 func (r *IndexReader) postingsLists(terms []string) []*PostingsList {
 	postingLists := make([]*PostingsList, 0, len(terms))
 	for _, term := range terms {
@@ -65,7 +66,7 @@ func (r *IndexReader) totalDocCount() int {
 	filename := filepath.Join(r.indexDir, "_0.dc")
 	file, err := os.Open(filename)
 	if err != nil {
-		return 0
+		return 0 // TODO: 説明を書く
 	}
 	defer file.Close()
 	bytes, err := ioutil.ReadAll(file)

@@ -3,6 +3,7 @@ package commands
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/kancers/go-tinysearch"
 	"github.com/urfave/cli"
 	"log"
@@ -11,7 +12,7 @@ import (
 
 var engine *tinysearch.Engine
 
-func Main()  {
+func Main() {
 
 	app := cli.NewApp()
 	app.Name = "tinysearch"
@@ -21,12 +22,14 @@ func Main()  {
 		createIndexCommand,
 		searchCommand,
 	}
+
 	db, err := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/tinysearch")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 	engine = tinysearch.NewSearchEngine(db)
+
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
