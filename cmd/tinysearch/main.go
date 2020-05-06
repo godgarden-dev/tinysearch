@@ -1,6 +1,6 @@
 package main
 
-import "github.com/kancers/go-tinysearch/commands"
+import "github.com/kancers/tinysearch/commands"
 
 func main() {
 	commands.Main()

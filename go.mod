@@ -1,4 +1,4 @@
-module github.com/kancers/go-tinysearch
+module github.com/kancers/tinysearch
 
 go 1.14
 

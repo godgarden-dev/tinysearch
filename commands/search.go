@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"github.com/kancers/go-tinysearch"
+	"github.com/kancers/tinysearch"
 	"github.com/urfave/cli"
 	"strings"
 )
