@@ -1,3 +1,3 @@
 # tinysearch
 
-A simple search engine developed in Golang.
+A simple search engine developed in Golan.
